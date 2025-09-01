@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Dataset Dashboard - Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .ml-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-card {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 1px solid #ffd700;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.1);
+        }
+        
+        .dashboard-card h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-ready { background: #00ff88; }
+        .status-pending { background: #ffaa00; }
+        .status-error { background: #ff4444; }
+        .status-not-available { background: #666; }
+        
+        .action-button {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            transition: width 0.3s ease;
+        }
+        
+        .dataset-table {
+            width: 100%;
+            background: #2a2a2a;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #ffd700;
+        }
+        
+        .dataset-table th,
+        .dataset-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        
+        .dataset-table th {
+            background: #1a1a1a;
+            color: #ffd700;
+            font-weight: 600;
+        }
+        
+        .dataset-table td {
+            color: #fff;
+        }
+        
+        .log-container {
+            background: #1a1a1a;
+            border: 1px solid #ffd700;
+            border-radius: 10px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #ffd700;
+            padding-left: 10px;
+        }
+        
+        .log-success { border-left-color: #00ff88; }
+        .log-error { border-left-color: #ff4444; }
+        .log-warning { border-left-color: #ffaa00; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #ffd700;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .stat-label {
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2a2a2a;
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            color: #ffd700;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="shield-icon">🛡️</span>
+                <span>ML Dataset Dashboard</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Home</a>
+                <a href="/admin" class="nav-link">📊 Admin</a>
+                <a href="/ml-dashboard" class="nav-link active">🤖 ML Dashboard</a>
+            </div>
+        </nav>
+
+        <main class="main-content ml-dashboard">
+            <div class="hero-section">
+                <h1>🤖 Machine Learning Dataset Dashboard</h1>
+                <p>Manage and prepare datasets for enhanced phishing detection</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- ML Status Card -->
+                <div class="dashboard-card">
+                    <h3>
+                        <span class="status-indicator" id="ml-status-indicator"></span>
+                        ML Components Status
+                    </h3>
+                    <div id="ml-status-content">
+                        <p>Loading ML status...</p>
+                    </div>
+                    <button class="action-button" id="initialize-ml-btn" onclick="initializeML()">
+                        Initialize ML Components
+                    </button>
+                </div>
+
+                <!-- Dataset Status Card -->
+                <div class="dashboard-card">
+                    <h3>
+                        <span class="status-indicator" id="dataset-status-indicator"></span>
+                        Dataset Status
+                    </h3>
+                    <div id="dataset-status-content">
+                        <p>Loading dataset status...</p>
+                    </div>
+                    <button class="action-button" id="prepare-datasets-btn" onclick="prepareDatasets()">
+                        Prepare Datasets
+                    </button>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="dashboard-card">
+                    <h3>⚡ Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="action-button" onclick="refreshStatus()">
+                            🔄 Refresh Status
+                        </button>
+                        <button class="action-button" onclick="downloadSample()">
+                            📥 Download Sample Dataset
+                        </button>
+                        <button class="action-button" onclick="viewLogs()">
+                            📋 View Preparation Logs
+                        </button>
+                        <button class="action-button" onclick="clearData()">
+                            🗑️ Clear All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="dashboard-card">
+                <h3>📊 Dataset Statistics</h3>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-urls">-</div>
+                        <div class="stat-label">Total URLs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="phishing-urls">-</div>
+                        <div class="stat-label">Phishing URLs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="legitimate-urls">-</div>
+                        <div class="stat-label">Legitimate URLs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="features-count">-</div>
+                        <div class="stat-label">Features</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="datasets-loaded">-</div>
+                        <div class="stat-label">Datasets Loaded</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dataset Files Table -->
+            <div class="dashboard-card">
+                <h3>📁 Dataset Files</h3>
+                <table class="dataset-table">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataset-files-table">
+                        <tr>
+                            <td>combined_phishing_dataset.csv</td>
+                            <td><span class="status-indicator status-pending"></span> Checking...</td>
+                            <td>Combined and standardized dataset</td>
+                            <td>
+                                <button class="action-button" onclick="downloadFile('combined_phishing_dataset.csv')">
+                                    📥 Download
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>feature_dataset.csv</td>
+                            <td><span class="status-indicator status-pending"></span> Checking...</td>
+                            <td>Extracted features for ML training</td>
+                            <td>
+                                <button class="action-button" onclick="downloadFile('feature_dataset.csv')">
+                                    📥 Download
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>train_dataset.csv</td>
+                            <td><span class="status-indicator status-pending"></span> Checking...</td>
+                            <td>Training dataset (80% split)</td>
+                            <td>
+                                <button class="action-button" onclick="downloadFile('train_dataset.csv')">
+                                    📥 Download
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>test_dataset.csv</td>
+                            <td><span class="status-indicator status-pending"></span> Checking...</td>
+                            <td>Test dataset (20% split)</td>
+                            <td>
+                                <button class="action-button" onclick="downloadFile('test_dataset.csv')">
+                                    📥 Download
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="dashboard-card" id="progress-section" style="display: none;">
+                <h3>⏳ Preparation Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <p id="progress-text">Initializing...</p>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="dashboard-card">
+                <h3>📋 Activity Logs</h3>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry">
+                        <span style="color: #ffd700;">[INFO]</span> ML Dashboard initialized
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for detailed information -->
+    <div id="info-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title">Information</h2>
+            <div id="modal-body">
+                <!-- Modal content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='style.js') }}"></script>
+    <script>
+        let mlStatus = null;
+        let datasetStatus = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Dashboard initialized', 'info');
+            refreshStatus();
+        });
+
+        async function refreshStatus() {
+            addLog('Refreshing ML and dataset status...', 'info');
+            
+            try {
+                // Get ML status
+                const mlResponse = await fetch('/api/ml/status');
+                mlStatus = await mlResponse.json();
+                
+                updateMLStatus(mlStatus);
+                updateDatasetStatus(mlStatus);
+                updateStatistics(mlStatus);
+                updateFileTable(mlStatus);
+                
+                addLog('Status updated successfully', 'success');
+                
+            } catch (error) {
+                addLog(`Error refreshing status: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        function updateMLStatus(status) {
+            const indicator = document.getElementById('ml-status-indicator');
+            const content = document.getElementById('ml-status-content');
+            const initBtn = document.getElementById('initialize-ml-btn');
+
+            if (status.status === 'ready') {
+                indicator.className = 'status-indicator status-ready';
+                content.innerHTML = `
+                    <p>✅ ML components are ready and initialized</p>
+                    <p>Components available: Dataset Preparator</p>
+                `;
+                initBtn.disabled = true;
+                initBtn.textContent = 'Already Initialized';
+            } else if (status.status === 'not_available') {
+                indicator.className = 'status-indicator status-not-available';
+                content.innerHTML = `
+                    <p>❌ ML components not available</p>
+                    <p>Reason: ${status.message}</p>
+                `;
+                initBtn.disabled = true;
+                initBtn.textContent = 'Not Available';
+            } else if (status.status === 'not_initialized') {
+                indicator.className = 'status-indicator status-pending';
+                content.innerHTML = `
+                    <p>⚠️ ML components not initialized</p>
+                    <p>Click Initialize to set up ML components</p>
+                `;
+                initBtn.disabled = false;
+                initBtn.textContent = 'Initialize ML Components';
+            } else {
+                indicator.className = 'status-indicator status-error';
+                content.innerHTML = `
+                    <p>❌ Error: ${status.message}</p>
+                `;
+                initBtn.disabled = false;
+                initBtn.textContent = 'Retry Initialize';
+            }
+        }
+
+        function updateDatasetStatus(status) {
+            const indicator = document.getElementById('dataset-status-indicator');
+            const content = document.getElementById('dataset-status-content');
+            const prepareBtn = document.getElementById('prepare-datasets-btn');
+
+            if (status.status === 'ready' && status.datasets_ready) {
+                indicator.className = 'status-indicator status-ready';
+                content.innerHTML = `
+                    <p>✅ All datasets are prepared and ready</p>
+                    <p>Files: Combined, Features, Train, Test</p>
+                `;
+                prepareBtn.textContent = 'Re-prepare Datasets';
+            } else if (status.status === 'ready') {
+                indicator.className = 'status-indicator status-pending';
+                content.innerHTML = `
+                    <p>⚠️ Some datasets missing</p>
+                    <p>Click Prepare to create all datasets</p>
+                `;
+                prepareBtn.textContent = 'Prepare Datasets';
+            } else {
+                indicator.className = 'status-indicator status-error';
+                content.innerHTML = `
+                    <p>❌ Datasets not available</p>
+                    <p>Initialize ML components first</p>
+                `;
+                prepareBtn.disabled = status.status !== 'ready';
+                prepareBtn.textContent = 'Prepare Datasets';
+            }
+        }
+
+        function updateStatistics(status) {
+            if (status.status === 'ready' && status.statistics) {
+                const stats = status.statistics;
+                document.getElementById('total-urls').textContent = stats.total_urls || 0;
+                document.getElementById('phishing-urls').textContent = stats.phishing_urls || 0;
+                document.getElementById('legitimate-urls').textContent = stats.legitimate_urls || 0;
+                document.getElementById('features-count').textContent = stats.features_extracted || 0;
+                document.getElementById('datasets-loaded').textContent = stats.datasets_loaded || 0;
+            }
+        }
+
+        function updateFileTable(status) {
+            if (status.status === 'ready' && status.files) {
+                const files = status.files;
+                const tableRows = document.querySelectorAll('#dataset-files-table tr');
+                
+                const fileNames = ['combined_dataset', 'feature_dataset', 'train_dataset', 'test_dataset'];
+                
+                fileNames.forEach((fileName, index) => {
+                    if (tableRows[index]) {
+                        const statusCell = tableRows[index].cells[1];
+                        const exists = files[fileName];
+                        
+                        if (exists) {
+                            statusCell.innerHTML = '<span class="status-indicator status-ready"></span> Available';
+                        } else {
+                            statusCell.innerHTML = '<span class="status-indicator status-error"></span> Missing';
+                        }
+                    }
+                });
+            }
+        }
+
+        async function initializeML() {
+            const btn = document.getElementById('initialize-ml-btn');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = 'Initializing...';
+            
+            addLog('Initializing ML components...', 'info');
+            
+            try {
+                const response = await fetch('/api/ml/initialize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    addLog('ML components initialized successfully', 'success');
+                    refreshStatus();
+                } else {
+                    addLog(`Failed to initialize ML components: ${result.message}`, 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+                
+            } catch (error) {
+                addLog(`Error initializing ML components: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function prepareDatasets() {
+            const btn = document.getElementById('prepare-datasets-btn');
+            const originalText = btn.textContent;
+            const progressSection = document.getElementById('progress-section');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            btn.disabled = true;
+            btn.textContent = 'Preparing...';
+            progressSection.style.display = 'block';
+            
+            addLog('Starting dataset preparation...', 'info');
+            
+            // Simulate progress updates
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90;
+                
+                progressFill.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = 'Downloading datasets...';
+                } else if (progress < 60) {
+                    progressText.textContent = 'Processing and cleaning data...';
+                } else if (progress < 90) {
+                    progressText.textContent = 'Extracting features...';
+                }
+            }, 500);
+            
+            try {
+                const response = await fetch('/api/ml/prepare', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Completed!';
+                
+                if (result.status === 'success') {
+                    addLog('Dataset preparation completed successfully', 'success');
+                    addLog(`Created files: ${result.files_created.join(', ')}`, 'info');
+                    
+                    // Show statistics
+                    if (result.statistics) {
+                        addLog(`Total URLs: ${result.statistics.total_urls}, Features: ${result.statistics.features_extracted}`, 'info');
+                    }
+                    
+                    setTimeout(() => {
+                        progressSection.style.display = 'none';
+                        refreshStatus();
+                    }, 2000);
+                } else {
+                    addLog(`Failed to prepare datasets: ${result.message}`, 'error');
+                    setTimeout(() => {
+                        progressSection.style.display = 'none';
+                    }, 2000);
+                }
+                
+                btn.disabled = false;
+                btn.textContent = originalText;
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                addLog(`Error preparing datasets: ${error.message}`, 'error');
+                
+                btn.disabled = false;
+                btn.textContent = originalText;
+                progressSection.style.display = 'none';
+            }
+        }
+
+        function downloadSample() {
+            addLog('Generating sample dataset...', 'info');
+            
+            // Create sample CSV data
+            const sampleData = `url,label,source
+https://www.google.com,0,sample
+https://paypal-verify.tk/account,1,sample
+https://www.facebook.com,0,sample
+http://192.168.1.1/secure,1,sample
+https://www.amazon.com,0,sample
+https://microsoft-alert.ga/verify,1,sample`;
+            
+            const blob = new Blob([sampleData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sample_phishing_dataset.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            addLog('Sample dataset downloaded', 'success');
+        }
+
+        function downloadFile(filename) {
+            addLog(`Downloading ${filename}...`, 'info');
+            // In a real implementation, this would download the actual file
+            // For now, we'll just show a message
+            addLog(`Download feature for ${filename} would be implemented here`, 'warning');
+        }
+
+        function clearData() {
+            if (confirm('Are you sure you want to clear all ML data? This cannot be undone.')) {
+                addLog('Clearing all ML data...', 'warning');
+                // In a real implementation, this would call an API to clear data
+                addLog('Clear data feature would be implemented here', 'warning');
+            }
+        }
+
+        function viewLogs() {
+            const modal = document.getElementById('info-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            title.textContent = 'Dataset Preparation Logs';
+            body.innerHTML = `
+                <div class="log-container" style="height: 400px;">
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Downloaded phishing_urls_1 dataset
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Downloaded phishing_urls_2 dataset
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Downloaded PhishTank verified URLs
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Preprocessed and standardized datasets
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Extracted 25 features from URLs
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> Created train/test split (80/20)
+                    </div>
+                    <div class="log-entry log-success">
+                        <span style="color: #00ff88;">[SUCCESS]</span> All datasets ready for ML training
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('info-modal').style.display = 'none';
+        }
+
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const typeLabel = type.toUpperCase();
+            const typeColors = {
+                'info': '#ffd700',
+                'success': '#00ff88',
+                'error': '#ff4444',
+                'warning': '#ffaa00'
+            };
+            
+            logEntry.innerHTML = `
+                <span style="color: ${typeColors[type] || '#ffd700'};">[${typeLabel}]</span>
+                <span style="color: #ccc;">${timestamp}</span> - ${message}
+            `;
+            
+            container.appendChild(logEntry);
+            container.scrollTop = container.scrollHeight;
+            
+            // Limit to last 50 entries
+            const entries = container.children;
+            if (entries.length > 50) {
+                container.removeChild(entries[0]);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('info-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

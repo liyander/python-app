@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Result - Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .result-card { max-width: 900px; margin: 24px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .verdict-malicious { color: #fff; background: #d9534f; padding: 6px 10px; border-radius: 4px; }
+        .verdict-suspicious { color: #fff; background: #f0ad4e; padding: 6px 10px; border-radius: 4px; }
+        .verdict-safe { color: #fff; background: #5cb85c; padding: 6px 10px; border-radius: 4px; }
+        .badge { display:inline-block; padding:6px 8px; border-radius:6px; background:#f4f4f6; margin-right:8px; }
+        .section { margin-top:16px; }
+        pre { background:#f9fafb; padding:12px; border-radius:6px; overflow:auto; }
+        table { width:100%; border-collapse:collapse; }
+        th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="result-card">
+    <h2>Scan Report</h2>
+    <div id="summary">
+        <span id="verdict" class="badge"></span>
+        <span id="confidence" class="badge"></span>
+        <span id="risk-score" class="badge"></span>
+        <span id="sources" class="badge"></span>
+    </div>
+    <div class="section">
+        <h3>Scanned Input & Time</h3>
+        <div id="scanned-input" style="font-family:monospace;color:#333;"></div>
+        <div id="scanned-time" style="color:#666;margin-top:6px;"></div>
+    </div>
+
+    <div class="section">
+        <h3>Reasoning</h3>
+        <ul id="reasoning"></ul>
+    </div>
+
+    <div class="section">
+        <h3>Model Details</h3>
+        <div id="model-details"></div>
+    </div>
+
+    <div class="section" id="statistics-section">
+        <h3>System Statistics</h3>
+        <div id="stats-container">
+            <span class="badge" id="stat-total">Total scans: N/A</span>
+            <span class="badge" id="stat-threats">Threats detected: N/A</span>
+            <span class="badge" id="stat-ml">ML-enhanced scans: N/A</span>
+            <span class="badge" id="stat-ml-available">ML available: N/A</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Raw Scan JSON</h3>
+        <pre id="raw-json"></pre>
+    </div>
+</div>
+
+<script>
+(function(){
+    // Read injected JSON if present
+    // Try to read base64 JSON from `data` query param
+    try {
+        var params = new URLSearchParams(location.search);
+        if (params.has('data')) {
+            var b = params.get('data');
+            try { window.__scan_result__ = JSON.parse(atob(b)); } catch(e) { window.__scan_result__ = JSON.parse(decodeURIComponent(b)); }
+        }
+    } catch(e) { /* ignore */ }
+    // Attempt to read result from window.__scan_result__ injected by server
+    var result = window.__scan_result__ || null;
+    if (!result) {
+        // Try to read from query param `data` (base64-encoded JSON)
+        try {
+            var params = new URLSearchParams(location.search);
+            if (params.has('data')) {
+                var b = params.get('data');
+                try { result = JSON.parse(atob(b)); } catch(e){ result = JSON.parse(decodeURIComponent(b)); }
+            }
+        } catch(e) { /* ignore */ }
+    }
+    if (!result) {
+        document.getElementById('raw-json').textContent = 'No scan result provided.';
+        return;
+    }
+
+    // Verdict badge
+    var verdictText = result.result || result.verdict || 'Unknown';
+    var verdictEl = document.getElementById('verdict');
+    verdictEl.textContent = verdictText;
+    if (/phish|malicious/i.test(verdictText)) { verdictEl.className = 'verdict-malicious'; }
+    else if (/suspicious/i.test(verdictText)) { verdictEl.className = 'verdict-suspicious'; }
+    else { verdictEl.className = 'verdict-safe'; }
+
+    // Confidence & risk
+    var conf = (result.confidence !== undefined) ? result.confidence + '%' : (result.ml_result && result.ml_result.confidence ? result.ml_result.confidence + '%' : 'N/A');
+    document.getElementById('confidence').textContent = 'Confidence: ' + conf;
+    document.getElementById('risk-score').textContent = 'Risk score: ' + (result.risk_score !== undefined ? result.risk_score : 'N/A');
+
+    // Sources (which subsystems flagged)
+    var sources = [];
+    if (result.ml_used || (result.ml_result && result.ml_result.verdict)) sources.push('ML');
+    if (result.virustotal_result && result.virustotal_result.verdict && result.virustotal_result.verdict !== 'unknown') sources.push('VirusTotal');
+    if (result.phishtank_result && result.phishtank_result.verdict && result.phishtank_result.verdict !== 'unknown') sources.push('PhishTank');
+    if (result.threats_detected && result.threats_detected.length) sources.push('Rules/Regex');
+    document.getElementById('sources').textContent = 'Sources: ' + (sources.length ? sources.join(', ') : 'None');
+
+    // Reasoning list
+    var reasoning = document.getElementById('reasoning');
+    var reasons = result.threats_detected || [];
+    if (result.regex_result && result.regex_result !== 'safe') reasons.push('Rule-based flagged: ' + result.regex_result);
+    if (result.virustotal_result && result.virustotal_result.verdict) reasons.push('VirusTotal: ' + result.virustotal_result.verdict);
+    if (result.phishtank_result && result.phishtank_result.verdict) reasons.push('PhishTank: ' + result.phishtank_result.verdict);
+    if (result.ml_result && result.ml_result.verdict) reasons.push('ML verdict: ' + result.ml_result.verdict + ' (' + (result.ml_result.confidence||'N/A') + '%)');
+    if (reasons.length === 0) {
+        var li = document.createElement('li'); li.textContent = 'No specific threats detected.'; reasoning.appendChild(li);
+    } else {
+        reasons.forEach(function(r){ var li=document.createElement('li'); li.textContent=r; reasoning.appendChild(li); });
+    }
+
+    // Model details
+    var md = document.getElementById('model-details');
+    if (result.ml_details) {
+        md.innerHTML = '<pre>' + JSON.stringify(result.ml_details, null, 2) + '</pre>';
+    } else if (result.ml_summary) {
+        md.innerHTML = '<pre>' + JSON.stringify(result.ml_summary, null, 2) + '</pre>';
+    } else {
+        md.textContent = 'No model details available.';
+    }
+
+    // Raw JSON
+    document.getElementById('raw-json').textContent = JSON.stringify(result, null, 2);
+})();
+
+// Fetch and render system statistics
+(function(){
+    fetch('/stats').then(function(r){
+        if (r.ok) return r.json();
+        throw new Error('stats fetch failed');
+    }).then(function(s){
+        document.getElementById('stat-total').textContent = 'Total scans: ' + (s.total_scans ?? 'N/A');
+        document.getElementById('stat-threats').textContent = 'Threats detected: ' + (s.threats_detected ?? 'N/A');
+        document.getElementById('stat-ml').textContent = 'ML-enhanced scans: ' + (s.ml_enhanced_scans ?? 'N/A');
+        document.getElementById('stat-ml-available').textContent = 'ML available: ' + (s.ml_available ? 'Yes' : 'No');
+    }).catch(function(e){
+        // hide stats if fetch fails
+        var sec = document.getElementById('statistics-section');
+        if (sec) sec.style.opacity = 0.6;
+    });
+})();
+</script>
+</body>
+</html>

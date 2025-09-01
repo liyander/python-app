@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Phishing Detector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #ffd700 0%, #ffeb3b 100%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #000;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: #000;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .nav-link:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: rgba(0, 0, 0, 0.15);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .history-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .history-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .safe { color: #28a745; }
+        .suspicious { color: #dc3545; }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .refresh-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .loading {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="shield-icon">🛡️</span>
+                <span>Admin Dashboard</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Home</a>
+                <a href="/admin" class="nav-link active">📊 Admin</a>
+                <!-- ML Dashboard hidden from admin navbar -->
+            </div>
+        </nav>
+
+        <h1>📊 Admin Dashboard - Phishing Detector</h1>
+        
+        <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📈 Overall Statistics</h3>
+                <div id="overall-stats">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>🔍 Scan Breakdown</h3>
+                <div id="scan-breakdown">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>⚡ Performance Metrics</h3>
+                <div id="performance-metrics">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="history-section">
+            <h3>📝 Recent Scan History</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Content</th>
+                        <th>Result</th>
+                        <th>Confidence</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <tr><td colspan="6">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                // Load statistics
+                const statsResponse = await fetch('/statistics');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success) {
+                    updateStatistics(statsData.statistics);
+                }
+                
+                // Load history
+                const historyResponse = await fetch('/history?limit=20');
+                const historyData = await historyResponse.json();
+                
+                if (historyData.success) {
+                    updateHistory(historyData.history);
+                }
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load dashboard data');
+            }
+        }
+        
+        function updateStatistics(stats) {
+            const overall = stats.overall;
+            
+            // Update overall statistics
+            document.getElementById('overall-stats').innerHTML = `
+                <div class="stat-item">
+                    <span>Total Scans:</span>
+                    <span class="stat-value">${overall.total_scans || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Safe Results:</span>
+                    <span class="stat-value safe">${overall.safe_results || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Suspicious Results:</span>
+                    <span class="stat-value suspicious">${overall.suspicious_results || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Average Confidence:</span>
+                    <span class="stat-value">${overall.avg_confidence || 0}%</span>
+                </div>
+            `;
+            
+            // Update scan breakdown
+            document.getElementById('scan-breakdown').innerHTML = `
+                <div class="stat-item">
+                    <span>URL Scans:</span>
+                    <span class="stat-value">${overall.url_scans || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Email Scans:</span>
+                    <span class="stat-value">${overall.email_scans || 0}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Success Rate:</span>
+                    <span class="stat-value">${overall.total_scans > 0 ? 
+                        Math.round((overall.safe_results / overall.total_scans) * 100) : 0}%</span>
+                </div>
+            `;
+            
+            // Update performance metrics
+            document.getElementById('performance-metrics').innerHTML = `
+                <div class="stat-item">
+                    <span>Avg Processing Time:</span>
+                    <span class="stat-value">${overall.avg_processing_time || 0}s</span>
+                </div>
+                <div class="stat-item">
+                    <span>Database Status:</span>
+                    <span class="stat-value safe">Connected</span>
+                </div>
+            `;
+        }
+        
+        function updateHistory(history) {
+            const tbody = document.getElementById('history-table-body');
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No scan records found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = history.map(record => `
+                <tr>
+                    <td>${record.id}</td>
+                    <td><span class="badge">${record.input_type.toUpperCase()}</span></td>
+                    <td>${record.input_content}</td>
+                    <td class="${record.is_safe ? 'safe' : 'suspicious'}">
+                        ${record.is_safe ? '✅ Safe' : '⚠️ Suspicious'}
+                    </td>
+                    <td>${record.confidence}%</td>
+                    <td>${new Date(record.timestamp).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadData);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>

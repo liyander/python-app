@@ -1,0 +1,7 @@
+url_length,domain_length,path_length,query_length,is_https,has_port,subdomain_count,domain_has_hyphen,domain_has_numbers,is_ip_address,suspicious_tld,url_encoded_chars,has_suspicious_words,brand_impersonation,is_shortened,path_depth,has_query,has_fragment,special_char_count,hyphen_count,underscore_count,dot_count,slash_count,label,category,url
+23,15,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,legitimate,https://www.twitter.com
+24,10,6,0,1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,3,1,homograph_attack,https://paypaI.com/login
+25,17,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,legitimate,https://www.wikipedia.org
+40,26,6,0,1,0,0,1,0,0,1,0,1,1,0,1,0,0,0,2,0,1,3,1,suspicious_tld,https://google-account-verify.buzz/login
+35,21,7,0,0,0,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,1,3,1,suspicious_tld,http://netflix-billing.click/update
+22,14,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,2,0,legitimate,https://www.amazon.com

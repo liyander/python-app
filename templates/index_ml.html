@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML-Enhanced Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .ml-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .ml-available {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #000;
+        }
+        
+        .ml-unavailable {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: #fff;
+        }
+        
+        .detection-method {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .method-hybrid {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .method-rule-based {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            color: #333;
+        }
+        
+        .method-ml-only {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #333;
+        }
+        
+        .ml-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+            border-radius: 5px;
+        }
+        
+        .model-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 0.85rem;
+        }
+        
+        .confidence-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .confidence-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .confidence-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .processing-time {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        
+        .toggle-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .ml-toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .ml-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .ml-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+        
+        .ml-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .ml-slider {
+            background-color: #ffd700;
+        }
+        
+        input:checked + .ml-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .status-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .status-card {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ffd700;
+            background: rgba(255, 215, 0, 0.05);
+            text-align: center;
+        }
+        
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        
+        .status-label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- ML Status Indicator -->
+    <div id="ml-indicator" class="ml-indicator ml-unavailable">
+        <span>🤖</span>
+        <span id="ml-status-text">Checking ML...</span>
+    </div>
+
+    <!-- Dynamic Security Background -->
+    <div class="security-background">
+        <div class="security-icon shield">🛡️</div>
+        <div class="security-icon lock">🔒</div>
+        <div class="security-icon key">🔑</div>
+        <div class="security-icon warning">⚠️</div>
+        <div class="security-icon check">✅</div>
+        <div class="security-icon robot">🤖</div>
+    </div>
+    
+    <!-- Dark Mode Toggle -->
+    <div class="dark-mode-toggle">
+        <input type="checkbox" id="dark-mode-switch" />
+        <label for="dark-mode-switch" class="toggle-label">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">🌙</span>
+        </label>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="shield-icon">🛡️</span>
+                <span>ML-Enhanced Phishing Detector</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link active">🏠 Home</a>
+                <a href="/test-ml" class="nav-link" onclick="testML(event)">🧪 Test ML</a>
+                <a href="/ml-status" class="nav-link" onclick="showMLStatus(event)">📊 ML Status</a>
+            </div>
+        </nav>
+
+        <header>
+            <h1>🤖 AI-Powered Phishing Detection</h1>
+            <p>Advanced protection using Machine Learning and pattern analysis</p>
+        </header>
+
+        <!-- ML Status Dashboard -->
+        <div class="status-dashboard" id="status-dashboard" style="display: none;">
+            <div class="status-card">
+                <div class="status-value" id="models-loaded">-</div>
+                <div class="status-label">ML Models Loaded</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="total-scans">-</div>
+                <div class="status-label">Total Scans</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="detection-accuracy">-</div>
+                <div class="status-label">Detection Method</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- ML Toggle -->
+            <div class="toggle-container">
+                <label style="margin-right: 10px;">🤖 Use ML Enhancement:</label>
+                <label class="ml-toggle">
+                    <input type="checkbox" id="ml-enabled" checked>
+                    <span class="ml-slider"></span>
+                </label>
+                <span style="margin-left: 10px; font-size: 0.9rem;" id="ml-toggle-status">Enabled</span>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="tabs">
+                    <button class="tab-button active" onclick="switchTab('url')">🌐 URL Scanner</button>
+                    <button class="tab-button" onclick="switchTab('email')" disabled>📧 Email Scanner (Coming Soon)</button>
+                </div>
+
+                <form id="scan-form">
+                    <div class="input-group">
+                        <input type="url" id="url-input" placeholder="Enter URL to check (e.g., https://example.com)" required>
+                        <button type="submit" id="scan-button">
+                            <span id="scan-text">🔍 Analyze with AI</span>
+                            <span id="scan-spinner" class="spinner" style="display: none;">⟳</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results" id="results">
+                <div class="result-header">
+                    <h3 id="result-title"></h3>
+                    <div class="confidence-badge" id="confidence-badge"></div>
+                </div>
+                <p id="result-message"></p>
+                
+                <!-- Detection Method Indicator -->
+                <div id="detection-method" class="detection-method" style="display: none;"></div>
+                
+                <!-- Confidence Breakdown -->
+                <div id="confidence-breakdown" class="confidence-breakdown" style="display: none;">
+                    <div class="confidence-item">
+                        <div class="confidence-value" id="overall-confidence">-</div>
+                        <div>Overall Confidence</div>
+                    </div>
+                    <div class="confidence-item">
+                        <div class="confidence-value" id="ml-confidence">-</div>
+                        <div>ML Confidence</div>
+                    </div>
+                </div>
+                
+                <!-- ML Details -->
+                <div id="ml-details" class="ml-details" style="display: none;">
+                    <h4>🤖 Machine Learning Analysis</h4>
+                    <div id="ml-models-info"></div>
+                </div>
+                
+                <!-- Threats List -->
+                <ul id="result-details"></ul>
+                
+                <!-- Processing Time -->
+                <div id="processing-time" class="processing-time" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='style.js') }}"></script>
+    <script>
+        let mlAvailable = false;
+        let currentScan = null;
+
+        // Initialize ML status check
+        document.addEventListener('DOMContentLoaded', function() {
+            checkMLStatus();
+            setupMLToggle();
+        });
+
+        async function checkMLStatus() {
+            try {
+                const response = await fetch('/ml-status');
+                const status = await response.json();
+                
+                mlAvailable = status.available;
+                updateMLIndicator(status);
+                
+                if (status.available) {
+                    document.getElementById('models-loaded').textContent = status.models_loaded;
+                }
+                
+            } catch (error) {
+                console.error('Failed to check ML status:', error);
+                updateMLIndicator({available: false, message: 'Check failed'});
+            }
+        }
+
+        function updateMLIndicator(status) {
+            const indicator = document.getElementById('ml-indicator');
+            const statusText = document.getElementById('ml-status-text');
+            
+            if (status.available) {
+                indicator.className = 'ml-indicator ml-available';
+                statusText.textContent = `ML Ready (${status.models_loaded} models)`;
+            } else {
+                indicator.className = 'ml-indicator ml-unavailable';
+                statusText.textContent = status.message || 'ML Unavailable';
+            }
+        }
+
+        function setupMLToggle() {
+            const toggle = document.getElementById('ml-enabled');
+            const statusSpan = document.getElementById('ml-toggle-status');
+            
+            toggle.addEventListener('change', function() {
+                statusSpan.textContent = this.checked ? 'Enabled' : 'Disabled';
+                
+                // Update scan button text
+                const scanText = document.getElementById('scan-text');
+                if (this.checked && mlAvailable) {
+                    scanText.textContent = '🔍 Analyze with AI';
+                } else {
+                    scanText.textContent = '🔍 Analyze (Rules Only)';
+                }
+            });
+            
+            // Disable ML toggle if ML not available
+            if (!mlAvailable) {
+                toggle.disabled = true;
+                toggle.checked = false;
+                statusSpan.textContent = 'Unavailable';
+            }
+        }
+
+        // Enhanced scan function
+        document.getElementById('scan-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const urlInput = document.getElementById('url-input');
+            const url = urlInput.value.trim();
+            const useMl = document.getElementById('ml-enabled').checked;
+            
+            if (!url) return;
+            
+            // Update UI
+            const scanButton = document.getElementById('scan-button');
+            const scanText = document.getElementById('scan-text');
+            const scanSpinner = document.getElementById('scan-spinner');
+            const results = document.getElementById('results');
+            
+            scanButton.disabled = true;
+            scanText.style.display = 'none';
+            scanSpinner.style.display = 'inline';
+            results.style.display = 'none';
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'url',
+                        input: url,
+                        use_ml: useMl
+                    })
+                });
+                
+                const endTime = Date.now();
+                const clientTime = endTime - startTime;
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResults(result, url, clientTime);
+                } else {
+                    displayError(result.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                // Reset button
+                scanButton.disabled = false;
+                scanText.style.display = 'inline';
+                scanSpinner.style.display = 'none';
+            }
+        });
+
+        function displayResults(result, url, clientTime) {
+            const results = document.getElementById('results');
+            const title = document.getElementById('result-title');
+            const badge = document.getElementById('confidence-badge');
+            const message = document.getElementById('result-message');
+            const details = document.getElementById('result-details');
+            
+            // Basic result info
+            const isPhishing = result.result === 'Phishing';
+            title.textContent = isPhishing ? '🚨 PHISHING DETECTED' : '✅ SAFE WEBSITE';
+            badge.textContent = `${result.confidence}%`;
+            badge.className = `confidence-badge ${isPhishing ? 'phishing' : 'safe'}`;
+            
+            message.textContent = isPhishing ? 
+                'This URL appears to be a phishing attempt. Do not enter personal information.' :
+                'This URL appears to be safe based on our analysis.';
+            
+            // Detection method
+            const methodDiv = document.getElementById('detection-method');
+            methodDiv.style.display = 'block';
+            
+            const methodClass = result.detection_method === 'hybrid' ? 'method-hybrid' : 'method-rule-based';
+            methodDiv.className = `detection-method ${methodClass}`;
+            
+            let methodText = '';
+            switch(result.detection_method) {
+                case 'hybrid':
+                    methodText = '🤖 AI-Enhanced Detection (ML + Rules)';
+                    break;
+                case 'rule_based':
+                    methodText = '📋 Rule-Based Detection';
+                    break;
+                default:
+                    methodText = '🔍 Standard Analysis';
+            }
+            methodDiv.textContent = methodText;
+            
+            // Confidence breakdown
+            if (result.ml_details) {
+                const breakdown = document.getElementById('confidence-breakdown');
+                breakdown.style.display = 'grid';
+                
+                document.getElementById('overall-confidence').textContent = `${result.confidence}%`;
+                document.getElementById('ml-confidence').textContent = 
+                    `${Math.round(result.ml_details.confidence * 100)}%`;
+                
+                // ML details
+                const mlDetails = document.getElementById('ml-details');
+                mlDetails.style.display = 'block';
+                
+                const mlInfo = document.getElementById('ml-models-info');
+                mlInfo.innerHTML = `
+                    <div class="model-info">
+                        <span>Models Used:</span>
+                        <span>${result.ml_details.models_used.join(', ')}</span>
+                    </div>
+                    <div class="model-info">
+                        <span>Voting Result:</span>
+                        <span>${result.ml_details.voting_ratio}</span>
+                    </div>
+                `;
+            } else {
+                document.getElementById('confidence-breakdown').style.display = 'none';
+                document.getElementById('ml-details').style.display = 'none';
+            }
+            
+            // Threats detected
+            details.innerHTML = '';
+            if (result.threats_detected && result.threats_detected.length > 0) {
+                result.threats_detected.forEach(threat => {
+                    const li = document.createElement('li');
+                    li.textContent = threat;
+                    details.appendChild(li);
+                });
+            }
+            
+            // Processing time
+            const procTime = document.getElementById('processing-time');
+            procTime.style.display = 'block';
+            procTime.textContent = `⏱️ Analysis completed in ${result.processing_time?.toFixed(3) || 'N/A'}s (client: ${(clientTime/1000).toFixed(3)}s)`;
+            
+            results.style.display = 'block';
+        }
+
+        function displayError(error) {
+            const results = document.getElementById('results');
+            const title = document.getElementById('result-title');
+            const message = document.getElementById('result-message');
+            const details = document.getElementById('result-details');
+            
+            title.textContent = '❌ ERROR';
+            message.textContent = error;
+            details.innerHTML = '';
+            
+            // Hide optional elements
+            document.getElementById('detection-method').style.display = 'none';
+            document.getElementById('confidence-breakdown').style.display = 'none';
+            document.getElementById('ml-details').style.display = 'none';
+            document.getElementById('processing-time').style.display = 'none';
+            
+            results.style.display = 'block';
+        }
+
+        async function testML(event) {
+            event.preventDefault();
+            
+            try {
+                const response = await fetch('/test-ml');
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('ML Test Error: ' + data.error);
+                    return;
+                }
+                
+                let resultText = 'ML Model Test Results:\n\n';
+                data.test_results.forEach(result => {
+                    resultText += `URL: ${result.url}\n`;
+                    resultText += `Prediction: ${result.prediction}\n`;
+                    resultText += `Confidence: ${Math.round(result.confidence * 100)}%\n`;
+                    resultText += `Method: ${result.method}\n\n`;
+                });
+                
+                alert(resultText);
+                
+            } catch (error) {
+                alert('Test failed: ' + error.message);
+            }
+        }
+
+        async function showMLStatus(event) {
+            event.preventDefault();
+            
+            try {
+                const response = await fetch('/ml-status');
+                const status = await response.json();
+                
+                let statusText = 'ML System Status:\n\n';
+                statusText += `Available: ${status.available ? 'Yes' : 'No'}\n`;
+                statusText += `Models Loaded: ${status.models_loaded || 0}\n`;
+                
+                if (status.models && status.models.length > 0) {
+                    statusText += '\nLoaded Models:\n';
+                    status.models.forEach(model => {
+                        statusText += `- ${model.name} (${model.features} features)\n`;
+                    });
+                }
+                
+                alert(statusText);
+                
+            } catch (error) {
+                alert('Status check failed: ' + error.message);
+            }
+        }
+
+        // Update total scans periodically
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/health');
+                const health = await response.json();
+                
+                if (health.total_records !== undefined) {
+                    document.getElementById('total-scans').textContent = health.total_records;
+                }
+                
+                document.getElementById('detection-accuracy').textContent = 
+                    health.ml_models_available ? 'AI + Rules' : 'Rules Only';
+                    
+            } catch (error) {
+                // Silently fail
+            }
+        }, 10000); // Every 10 seconds
+    </script>
+</body>
+</html>

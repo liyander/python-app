@@ -1,0 +1,82 @@
+INFO:ml_predictor:\U0001f4c2 Loading trained models...
+INFO:ml_predictor:\u2705 Loaded Random Forest
+INFO:ml_predictor:\u2705 Loaded Logistic Regression
+Traceback (most recent call last):
+  File "C:\Users\selva\phishing-detector\phishing-detector\app_clean.py", line 90, in <module>
+    print(f"\u2705 ML Models loaded: {len(ml_predictor.models)} models ready")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\selva\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+INFO:ml_predictor:📂 Loading trained models...
+INFO:ml_predictor:✅ Loaded Random Forest
+INFO:ml_predictor:✅ Loaded Logistic Regression
+INFO:__main__:✅ Database initialized successfully
+✅ ML Models loaded: 2 models ready
+🔥 ML models pre-warmed
+ * Serving Flask app 'app_clean'
+ * Debug mode: off
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:33] "GET / HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=22
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:33] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=43
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:33] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=18
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:34] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=32
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:34] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=39
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:35] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=72
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:35] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=40
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:36] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=67
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:36] "POST /scan HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:37] "[33mGET /stats HTTP/1.1[0m" 404 -
+INFO:__main__:Received scan request: type=url, input_length=23
+ERROR:__main__:Failed to save scan record: table scan_records has no column named threats_detected
+INFO:werkzeug:127.0.0.1 - - [19/Aug/2025 15:24:37] "POST /scan HTTP/1.1" 200 -
+INFO:ml_predictor:📂 Loading trained models...
+INFO:ml_predictor:✅ Loaded Random Forest
+INFO:ml_predictor:✅ Loaded Logistic Regression
+INFO:__main__:✅ Database initialized and schema checked
+✅ ML Models loaded: 2 models ready
+🔥 ML models pre-warmed
+ * Serving Flask app 'app_clean'
+ * Debug mode: off
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:23] "GET / HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=22
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:24] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=43
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:24] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=18
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:25] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=url, input_length=32
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:25] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=39
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:26] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=72
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:26] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=40
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:27] "POST /scan HTTP/1.1" 200 -
+INFO:__main__:Received scan request: type=email, input_length=67
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:27] "POST /scan HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:28] "[33mGET /stats HTTP/1.1[0m" 404 -
+INFO:__main__:Received scan request: type=url, input_length=23
+INFO:werkzeug:127.0.0.1 - - [20/Aug/2025 13:04:28] "POST /scan HTTP/1.1" 200 -

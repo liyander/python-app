@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scan Detail</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    pre { background:#f5f5f5; padding:10px; border-radius:4px; }
+    a.button { padding: 6px 10px; background:#007bff; color:white; text-decoration:none; border-radius:4px }
+  </style>
+</head>
+<body>
+  <h1>Scan #{{ scan['id'] }}</h1>
+  <p><a href="/admin/scans" class="button">Back to list</a></p>
+  <h3>Summary</h3>
+  <ul>
+    <li><strong>Type:</strong> {{ scan['input_type'] }}</li>
+    <li><strong>Input:</strong> <span class="mono">{{ scan['input_content'] }}</span></li>
+    <li><strong>Result:</strong> {{ scan['result'] }}</li>
+    <li><strong>Confidence:</strong> {{ scan['confidence'] }}</li>
+    <li><strong>ML Used:</strong> {{ 'Yes' if scan['ml_used'] else 'No' }}</li>
+    <li><strong>Time:</strong> {{ scan['timestamp'] }}</li>
+  </ul>
+
+  <h3>Threats Detected</h3>
+  {% if threats %}
+    <ul>
+      {% for t in threats %}
+      <li>{{ t }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>None</p>
+  {% endif %}
+
+  <h3>Raw Record (JSON)</h3>
+  <pre>{{ raw | tojson(indent=2) }}</pre>
+</body>
+</html>

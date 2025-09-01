@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detector</title>
+    <style>
+        :root{
+            --bg: #0f1720;
+            --card-bg: rgba(255,255,255,0.04);
+            --panel-bg: #111216;
+            --text: #e6eef8;
+            --muted: rgba(230,238,248,0.7);
+            --accent: #f8d030; /* yellow */
+            --accent-2: #ffd84d;
+            --danger: #ff6b6b;
+            --safe: #27ae60;
+            --glass: rgba(255,255,255,0.03);
+            --shadow: 0 10px 30px rgba(2,6,23,0.6);
+        }
+        .light{
+            --bg: linear-gradient(135deg,#fff7e6 0%,#fff4d6 100%);
+            --card-bg: rgba(255,255,255,0.95);
+            --panel-bg: #fff9f0;
+            --text: #111827;
+            --muted: rgba(17,24,39,0.7);
+            --accent: #f59e0b;
+            --accent-2: #fbbf24;
+            --glass: rgba(0,0,0,0.03);
+            --shadow: 0 8px 24px rgba(17,24,39,0.08);
+        }
+
+        *{box-sizing:border-box}
+        html,body{height:100%;margin:0;font-family:Segoe UI,system-ui,-apple-system,Roboto,'Helvetica Neue',Arial;color:var(--text);background:var(--bg);}
+
+        body{
+            --cursor-x:50vw;
+            --cursor-y:50vh;
+            background: radial-gradient(800px circle at var(--cursor-x) var(--cursor-y), rgba(255,215,80,0.06), transparent 8%), var(--bg);
+            transition: background 300ms linear;
+        }
+
+        .page{
+            min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;
+        }
+
+        .panel{
+            width:100%;max-width:820px;border-radius:14px;padding:26px;background:linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.28));box-shadow:var(--shadow);backdrop-filter: blur(8px);position:relative;overflow:hidden;
+        }
+
+        .panel::after{
+            content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%);
+        }
+
+        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+        .brand{display:flex;align-items:center;gap:14px}
+        .logo{width:58px;height:58px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#111}
+        .brand h1{font-size:1.6rem;margin:0}
+        .brand p{margin:0;color:var(--muted);font-size:0.95rem}
+
+        .controls{display:flex;gap:12px;align-items:center}
+        .theme-toggle{display:inline-flex;align-items:center;gap:8px;background:var(--glass);padding:8px;border-radius:999px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+        .theme-toggle .dot{width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 4px 12px rgba(0,0,0,0.25)}
+
+        .content{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        @media(max-width:880px){.content{grid-template-columns:1fr}}
+
+        .card{background:var(--card-bg);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+        .card h3{margin:0 0 12px 0;color:var(--text)}
+        label{display:block;color:var(--muted);font-size:0.9rem;margin-bottom:8px}
+        .input-field{width:100%;padding:12px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);font-size:0.95rem}
+        textarea.input-field{resize:vertical;min-height:120px}
+
+        .action{margin-top:12px}
+        .scan-button{width:100%;padding:12px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#111;font-weight:700;cursor:pointer}
+        .scan-button:disabled{opacity:0.6;cursor:not-allowed}
+
+        /* central results panel */
+        .results{grid-column:1/-1;margin-top:18px;padding:16px;border-radius:10px;background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.18));display:none}
+        .results.show{display:block}
+        .result-head{display:flex;justify-content:space-between;align-items:center}
+        .result-title{font-weight:800;font-size:1.15rem}
+        .confidence{padding:6px 10px;border-radius:999px;font-weight:700}
+        .confidence.safe{background:var(--safe);color:#fff}
+        .confidence.danger{background:var(--danger);color:#fff}
+
+        .threats{margin-top:10px;color:var(--muted)}
+
+        /* subtle floating icons for visibility that react to cursor */
+        .float-icon{position:absolute;left:10%;top:10%;width:36px;height:36px;opacity:0.06;filter:blur(4px);transition:transform 250ms,opacity 200ms}
+        .float-icon--2{left:85%;top:18%}
+        .float-icon--3{left:20%;top:78%}
+        .panel.cursor-near .float-icon{opacity:0.18;transform:translateY(-6px)}
+
+        /* visibility - when cursor close to panel amplify glow */
+        .panel.glow{box-shadow:0 20px 60px rgba(248,208,48,0.18)}
+
+        footer{margin-top:18px;color:var(--muted);text-align:center}
+
+    </style>
+</head>
+<body id="page" class="">
+    <div class="page">
+        <div class="panel" id="panel">
+            <div class="header">
+                <div class="brand">
+                    <div class="logo">🔰</div>
+                    <div>
+                        <h1>Phishing Detector</h1>
+                        <p>Protect yourself from phishing attacks</p>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <a href="/admin/login" title="Admin login" style="text-decoration:none;color:var(--muted);font-size:0.95rem;margin-right:12px">Admin</a>
+                    <div class="theme-toggle" id="themeToggle" title="Toggle light / dark">
+                        <div class="dot" id="themeDot"></div>
+                        <div style="font-size:0.9rem;color:var(--muted)">Theme</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="card">
+                    <h3>URL Scanner</h3>
+                    <form id="url-form">
+                        <label for="url-input">Enter URL to check:</label>
+                        <input id="url-input" class="input-field" type="url" placeholder="https://example.com" required />
+                        <div class="action">
+                            <button id="url-scan-btn" class="scan-button" type="submit"><span id="url-scan-text">🔍 Analyze</span> <span id="url-spinner" style="display:none">⏳</span></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Email Scanner</h3>
+                    <form id="email-form">
+                        <label for="email-input">Paste email content:</label>
+                        <textarea id="email-input" class="input-field" placeholder="Paste email content here..." required></textarea>
+                        <div class="action">
+                            <button id="email-scan-btn" class="scan-button" type="submit"><span id="email-scan-text">🔍 Analyze</span> <span id="email-spinner" style="display:none">⏳</span></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="results" id="results">
+                    <div class="result-head">
+                        <div class="result-title" id="result-title">Result</div>
+                        <div id="confidence-badge" class="confidence safe">100%</div>
+                    </div>
+                    <div class="threats" id="result-message">No threats detected</div>
+                    <ul id="threats-list" style="margin-top:10px"></ul>
+                </div>
+            </div>
+
+            <div class="float-icon float-icon--1">🔒</div>
+            <div class="float-icon float-icon--2">⚠️</div>
+            <div class="float-icon float-icon--3">✅</div>
+
+            <footer>Stay safe online with advanced threat detection</footer>
+        </div>
+    </div>
+
+    <script>
+        // Theme handling
+        const page = document.getElementById('page');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeDot = document.getElementById('themeDot');
+        const PANEL = document.getElementById('panel');
+
+        function setTheme(light){
+            if(light){
+                page.classList.add('light');
+                themeDot.style.background = 'var(--accent-2)';
+            } else {
+                page.classList.remove('light');
+                themeDot.style.background = 'var(--accent)';
+            }
+            localStorage.setItem('phish_theme_light', light ? '1':'0');
+        }
+
+        // initialize
+        const saved = localStorage.getItem('phish_theme_light');
+        setTheme(saved === '1');
+
+        themeToggle.addEventListener('click', ()=>{
+            const isLight = page.classList.contains('light');
+            setTheme(!isLight);
+        });
+
+        // Cursor detection for visibility
+        let lastMove = 0;
+        document.addEventListener('mousemove', (e)=>{
+            const rect = PANEL.getBoundingClientRect();
+            const cx = e.clientX;
+            const cy = e.clientY;
+            // update radial gradient origin
+            document.body.style.setProperty('--cursor-x', cx + 'px');
+            document.body.style.setProperty('--cursor-y', cy + 'px');
+
+            // compute distance to panel center
+            const px = rect.left + rect.width/2;
+            const py = rect.top + rect.height/2;
+            const dx = cx - px; const dy = cy - py;
+            const dist = Math.hypot(dx,dy);
+
+            // near threshold
+            if(dist < Math.max(rect.width, rect.height)){
+                PANEL.classList.add('cursor-near');
+            } else {
+                PANEL.classList.remove('cursor-near');
+            }
+
+            // glow when very close
+            if(dist < Math.min(rect.width, rect.height)/2){
+                PANEL.classList.add('glow');
+            } else {
+                PANEL.classList.remove('glow');
+            }
+
+            lastMove = Date.now();
+        });
+
+        // Hide floating icons when idle
+        let idleTimer = null;
+        document.addEventListener('mousemove', ()=>{
+            clearTimeout(idleTimer);
+            PANEL.querySelectorAll('.float-icon').forEach(el=>el.style.opacity='0.18');
+            idleTimer = setTimeout(()=>{
+                PANEL.querySelectorAll('.float-icon').forEach(el=>el.style.opacity='0.04');
+            }, 1800);
+        });
+
+        // Preserve original JS handlers (scan functions) - reuse existing IDs
+    document.getElementById('url-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const urlInput = document.getElementById('url-input');
+            const url = urlInput.value.trim();
+            if (!url) return;
+            await scanInput('url', url, 'url-scan-btn', 'url-scan-text', 'url-spinner');
+        });
+
+        document.getElementById('email-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('email-input');
+            const email = emailInput.value.trim();
+            if (!email) return;
+            await scanInput('email', email, 'email-scan-btn', 'email-scan-text', 'email-spinner');
+        });
+
+        // Encode unicode-safe base64 for redirect payload
+        function encodeResultForUrl(obj){
+            try{
+                return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+            }catch(e){
+                // Fallback for older browsers
+                return btoa(JSON.stringify(obj));
+            }
+        }
+
+        async function scanInput(type, input, buttonId, textId, spinnerId) {
+            const button = document.getElementById(buttonId);
+            const text = document.getElementById(textId);
+            const spinner = document.getElementById(spinnerId);
+            button.disabled = true; text.style.display='none'; spinner.style.display='inline-block';
+            try{
+                const res = await fetch('/scan', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:type,input:input})});
+                const result = await res.json();
+                if(result && result.success){
+                    // Redirect to the dedicated result page with base64 payload
+                    const b = encodeResultForUrl(result);
+                    // Use location replace to avoid back-button clutter
+                    window.location.replace('/result?data=' + b);
+                    return;
+                } else {
+                    displayError(result && result.error ? result.error : 'Scan failed');
+                }
+            }catch(err){ displayError('Network: '+err.message); }
+            finally{ button.disabled=false; text.style.display='inline'; spinner.style.display='none'; }
+        }
+
+        function displayResults(result,input){
+            const results = document.getElementById('results');
+            const title = document.getElementById('result-title');
+            const message = document.getElementById('result-message');
+            const badge = document.getElementById('confidence-badge');
+            const threatsList = document.getElementById('threats-list');
+
+            results.classList.add('show'); threatsList.innerHTML='';
+            title.textContent = result.result || 'Result';
+            message.textContent = `Input: ${input}`;
+            const conf = result.confidence||0;
+            badge.textContent = conf + '%';
+            if(result.result === 'Safe'){ badge.className='confidence safe'; badge.classList.add('confidence','safe'); }
+            else { badge.className='confidence danger'; badge.classList.add('confidence','danger'); }
+
+            const threats = result.threats_detected || [];
+            if(Array.isArray(threats)){
+                threats.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; threatsList.appendChild(li); });
+            } else if(typeof threats === 'object'){
+                Object.values(threats).forEach(t=>{ const li=document.createElement('li'); li.textContent=t; threatsList.appendChild(li); });
+            }
+        }
+
+        function displayError(msg){
+            const results = document.getElementById('results');
+            const title = document.getElementById('result-title');
+            const message = document.getElementById('result-message');
+            const badge = document.getElementById('confidence-badge');
+            const threatsList = document.getElementById('threats-list');
+            results.classList.add('show'); title.textContent='Error'; message.textContent=msg; badge.textContent='—'; threatsList.innerHTML=''; badge.className='confidence danger';
+        }
+    </script>
+</body>
+</html>
